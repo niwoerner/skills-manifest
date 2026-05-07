@@ -18,8 +18,8 @@ export const REGISTRY_FILENAME = "registry.ts";
 /** Generated JSON file that records the resolved skill commits and paths. */
 export const LOCK_FILENAME = "skills-lock.json";
 
-/** Required file that identifies a valid agent skill directory. */
-export const SKILL_ENTRYPOINT = "SKILL.md";
+/** Required file that identifies a valid active agent skill directory. */
+export const SKILL_FILE = "SKILL.md";
 
 /** Max number of Git clone/fetch operations to run at once. */
 export const MAX_CONCURRENT_CLONES = 5;

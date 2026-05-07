@@ -46,7 +46,8 @@ describe("cloneAndOverwrite", () => {
             upstreamPath: "skills/go",
             localDir: "owner/repo/go"
         });
-        await expect(readInstalledSkill("owner/repo/go/SKILL.md")).resolves.toContain("go");
+        await expect(readInstalledSkill("owner/repo/go/SKILL.manifest.md")).resolves.toContain("go");
+        await expect(readInstalledSkill("owner/repo/go/SKILL.md")).rejects.toThrow();
     });
 
     it("loads valid skills directly under the defined wildcard path", async () => {
@@ -56,7 +57,8 @@ describe("cloneAndOverwrite", () => {
 
         expect(clonedSkills.map((clonedSkill) => clonedSkill.id)).toEqual(["go"]);
         expect(clonedSkills[0].localDir).toBe("owner/repo/skills/go");
-        await expect(readInstalledSkill("owner/repo/skills/go/SKILL.md")).resolves.toContain("go");
+        await expect(readInstalledSkill("owner/repo/skills/go/SKILL.manifest.md")).resolves.toContain("go");
+        await expect(readInstalledSkill("owner/repo/skills/go/SKILL.md")).rejects.toThrow();
     });
 
     it("loads valid skills recursively from the defined wildcard path onward", async () => {
@@ -69,8 +71,9 @@ describe("cloneAndOverwrite", () => {
             ["frontend/js", "skills/frontend/js"],
             ["go", "skills/go"]
         ]);
-        await expect(readInstalledSkill("owner/repo/skills/backend/go/SKILL.md")).resolves.toContain("backend go");
-        await expect(readInstalledSkill("owner/repo/skills/frontend/js/SKILL.md")).resolves.toContain("frontend js");
+        await expect(readInstalledSkill("owner/repo/skills/backend/go/SKILL.manifest.md")).resolves.toContain("backend go");
+        await expect(readInstalledSkill("owner/repo/skills/frontend/js/SKILL.manifest.md")).resolves.toContain("frontend js");
+        await expect(readInstalledSkill("owner/repo/skills/backend/go/SKILL.md")).rejects.toThrow();
     });
 
     it("loads valid skills recursively from repo root with */**", async () => {

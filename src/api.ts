@@ -1,5 +1,8 @@
-import { cp, mkdir, rm, stat } from "node:fs/promises";
+import { cp, mkdir, rename, rm, stat } from "node:fs/promises";
 import path from "node:path";
+
+const SKILL_FILE = "SKILL.md";
+const STORED_SKILL_FILE = "SKILL.manifest.md";
 
 export type SkillRegistryEntry = {
     id: string;
@@ -62,9 +65,27 @@ export function createSkillsRegistry<const Registry extends SkillsRegistry>(regi
 
 async function copySkill(skill: SkillRegistryEntry, targetPath: string) {
     await assertDirectory(skill.localPath, `Skill source does not exist or is not a directory: ${skill.localPath}`);
+    await assertFile(
+        path.join(skill.localPath, STORED_SKILL_FILE),
+        `Skill source is missing ${STORED_SKILL_FILE}: ${skill.localPath}`
+    );
+
     await mkdir(path.dirname(targetPath), { recursive: true });
     await rm(targetPath, { recursive: true, force: true });
     await cp(skill.localPath, targetPath, { recursive: true, force: true });
+    await rename(
+        path.join(targetPath, STORED_SKILL_FILE),
+        path.join(targetPath, SKILL_FILE)
+    );
+}
+
+async function assertFile(filePath: string, message: string) {
+    try {
+        const stats = await stat(filePath);
+        if (!stats.isFile()) throw new Error(message);
+    } catch {
+        throw new Error(message);
+    }
 }
 
 async function assertDirectory(filePath: string, message: string) {

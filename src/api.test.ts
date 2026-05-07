@@ -28,6 +28,7 @@ describe("load", () => {
         await load([skill], "./.agents/skills");
 
         await expect(readProjectFile(".agents/skills/go/SKILL.md")).resolves.toContain("go");
+        await expect(readProjectFile(".agents/skills/go/SKILL.manifest.md")).rejects.toThrow();
     });
 
     it("loads one skill directly into an explicit target path", async () => {
@@ -36,6 +37,7 @@ describe("load", () => {
         await load(skill, "./custom/go");
 
         await expect(readProjectFile("custom/go/SKILL.md")).resolves.toContain("go");
+        await expect(readProjectFile("custom/go/SKILL.manifest.md")).rejects.toThrow();
     });
 
     it("loads multiple skills under their ids in an explicit target directory", async () => {
@@ -73,6 +75,17 @@ describe("load", () => {
         }, "./loaded/go")).rejects.toThrow("Skill source does not exist or is not a directory");
     });
 
+    it("rejects source directories missing the stored skill file", async () => {
+        const sourceDir = path.join(tempDir, "sources", "missing-stored-skill-file");
+        await mkdir(sourceDir, { recursive: true });
+
+        await expect(load({
+            id: "go",
+            upstreamPath: "skills/go",
+            localPath: sourceDir
+        }, "./loaded/go")).rejects.toThrow("Skill source is missing SKILL.manifest.md");
+    });
+
     it("rejects invalid ids when placing skills under a target directory", async () => {
         const skill = await createSkill("../bad", "bad");
 
@@ -83,7 +96,7 @@ describe("load", () => {
 async function createSkill(id: string, content: string): Promise<SkillRegistryEntry> {
     const sourceDir = path.join(tempDir, "sources", ...id.split("/"));
     await mkdir(sourceDir, { recursive: true });
-    await writeFile(path.join(sourceDir, "SKILL.md"), `# ${content}\n`, "utf8");
+    await writeFile(path.join(sourceDir, "SKILL.manifest.md"), `# ${content}\n`, "utf8");
 
     return {
         id,

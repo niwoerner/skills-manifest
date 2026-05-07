@@ -76,6 +76,8 @@ await load(goSkill, "./custom/skills/go");
 
 Loading multiple skills copies them under the target by skill id, e.g. `./.agents/skills/go` and `./.agents/skills/backend/go`.
 
+Generated skills under `skills-manifests/` are stored with `SKILL.manifest.md` instead of `SKILL.md`, so agents do not auto-load them from the registry store. `load()` restores the file as `SKILL.md` in the target directory.
+
 ## Local development
 
 ```sh

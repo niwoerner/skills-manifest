@@ -3,7 +3,7 @@ import { cp, mkdir, mkdtemp, rename, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { simpleGit, type SimpleGit } from "simple-git";
-import { MAX_CONCURRENT_CLONES, SKILL_ENTRYPOINT } from "./index.js";
+import { MAX_CONCURRENT_CLONES, SKILL_FILE } from "./index.js";
 import type { ClonedSkill } from "./generate.js";
 import type { Skill, SkillsManifest } from "./manifest.js";
 import {
@@ -17,6 +17,8 @@ import {
 } from "./paths.js";
 import { parseGitRepo } from "./repo.js";
 import { validateSkillDirectory } from "./validate.js";
+
+const STORED_SKILL_FILE = "SKILL.manifest.md";
 
 type ResolvedSkill = {
     upstreamPath: string;
@@ -188,8 +190,8 @@ async function resolveSkills(
 
 async function validateSkillEntrypointInTree(git: SimpleGit, skillPath: string, skill: Skill) {
     const files = await listTreeFiles(git, skillPath);
-    if (!files.includes(`${skillPath}/${SKILL_ENTRYPOINT}`)) {
-        throw new Error(`Skill is missing ${SKILL_ENTRYPOINT}: ${skill.repoUrl}:${skill.path}`);
+    if (!files.includes(`${skillPath}/${SKILL_FILE}`)) {
+        throw new Error(`Skill is missing ${SKILL_FILE}: ${skill.repoUrl}:${skill.path}`);
     }
 }
 
@@ -229,9 +231,9 @@ async function listTreeFiles(git: SimpleGit, basePath: string) {
 }
 
 function getSkillDirFromEntrypoint(filePath: string) {
-    if (filePath === SKILL_ENTRYPOINT) return "";
+    if (filePath === SKILL_FILE) return "";
 
-    const suffix = `/${SKILL_ENTRYPOINT}`;
+    const suffix = `/${SKILL_FILE}`;
     if (!filePath.endsWith(suffix)) return undefined;
 
     return filePath.slice(0, -suffix.length);
@@ -258,6 +260,10 @@ async function copyResolvedSkill(args: FetchedSkillRepo & {
 
     await rm(tempOutputDir, { recursive: true, force: true });
     await cp(sourceSkillDir, tempOutputDir, { recursive: true, force: true });
+    await rename(
+        path.join(tempOutputDir, SKILL_FILE),
+        path.join(tempOutputDir, STORED_SKILL_FILE)
+    );
 
     await rm(finalDir, { recursive: true, force: true });
     await rename(tempOutputDir, finalDir);

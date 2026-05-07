@@ -1,11 +1,11 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
-import { SKILL_ENTRYPOINT } from "./index.js";
+import { SKILL_FILE } from "./index.js";
 import type { Skill } from "./manifest.js";
 
 /**
  * Validates after checkout: fetch already proves repo/auth/ref; this proves the
- * manifest path is a skill directory with the required SKILL.md entrypoint.
+ * manifest path is a skill directory with the required SKILL.md file.
  */
 export async function validateSkillDirectory(sourceSkillDir: string, skill: Skill) {
     await assertDirectory(
@@ -14,8 +14,8 @@ export async function validateSkillDirectory(sourceSkillDir: string, skill: Skil
     );
 
     await assertFile(
-        path.join(sourceSkillDir, SKILL_ENTRYPOINT),
-        `Skill is missing ${SKILL_ENTRYPOINT}: ${skill.repoUrl}:${skill.path}`
+        path.join(sourceSkillDir, SKILL_FILE),
+        `Skill is missing ${SKILL_FILE}: ${skill.repoUrl}:${skill.path}`
     );
 }
 
