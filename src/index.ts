@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
+import { realpathSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { cloneAndOverwrite } from "./git.js";
 import { loadSkillsManifest } from "./manifest.js";
 import { validateGeneratedSkills } from "./check.js";
@@ -25,6 +26,16 @@ export const MAX_CONCURRENT_CLONES = 5;
 
 async function main() {
     const command = process.argv[2] ?? "generate";
+
+    if (command === "--help" || command === "-h" || process.argv[3] === "--help" || process.argv[3] === "-h") {
+        printHelp();
+        return;
+    }
+
+    if (command !== "generate" && command !== "validate") {
+        throw new Error(`Unknown command: ${command}. Expected "generate" or "validate".`);
+    }
+
     const skillsManifestPath = path.resolve(process.cwd(), process.argv[3] ?? "skills-manifest.json");
     const manifest = await loadSkillsManifest(skillsManifestPath);
 
@@ -36,17 +47,35 @@ async function main() {
         return;
     }
 
-    if (command === "validate") {
-        const warnings = await validateGeneratedSkills(manifest);
-        if (warnings.length > 0) {
-            console.warn(`Warning: skills-manifest generated files are out of date. Run skills-manifest generate.\n${warnings.join("\n")}`);
-        }
-        return;
+    const warnings = await validateGeneratedSkills(manifest);
+    if (warnings.length > 0) {
+        console.warn(`Warning: skills-manifest generated files are out of date. Run skills-manifest generate.\n${warnings.join("\n")}`);
     }
-
-    throw new Error(`Unknown command: ${command}. Expected "generate" or "validate".`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-    main();
+function printHelp() {
+    console.log(`Usage: skills-manifest [generate|validate] [skills-manifest.json]
+
+Commands:
+  generate    Install skills, write registry.ts, and write skills-lock.json
+  validate    Check generated skills against the manifest and lock file
+
+If omitted, the command defaults to generate and the manifest defaults to ./skills-manifest.json.`);
+}
+
+function isMain() {
+    if (!process.argv[1]) return false;
+
+    try {
+        return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+    } catch {
+        return false;
+    }
+}
+
+if (isMain()) {
+    main().catch((error: unknown) => {
+        console.error(error instanceof Error ? error.message : String(error));
+        process.exitCode = 1;
+    });
 }
