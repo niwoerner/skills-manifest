@@ -9,8 +9,10 @@
 Install:
 
 ```sh
-npm install skills-manifest
+npm install -D @niwoerner/skills-manifest
 ```
+
+The unscoped `skills-manifest` npm package is a different project. Use the scoped package above.
 
 Create `skills-manifest.json`:
 

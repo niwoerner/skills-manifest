@@ -1,5 +1,5 @@
 {
-  "name": "skills-manifest",
+  "name": "@niwoerner/skills-manifest",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,6 +20,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "npm run build && node dist/index.js",
     "build": "tsc",
