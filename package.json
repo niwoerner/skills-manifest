@@ -7,6 +7,10 @@
   "bin": {
     "skills-manifest": "dist/index.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/niwoerner/skills-manifest.git"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
