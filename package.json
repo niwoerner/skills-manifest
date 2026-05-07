@@ -1,11 +1,11 @@
 {
   "name": "@niwoerner/skills-manifest",
-  "version": "0.0.0",
+  "version": "0.0.4",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "skills-manifest": "./dist/index.js"
+    "skills-manifest": "dist/index.js"
   },
   "exports": {
     ".": {
