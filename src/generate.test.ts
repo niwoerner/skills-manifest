@@ -6,6 +6,7 @@ const clonedSkill: ClonedSkill = {
     repoName: "opentelemetry-agent-skills",
     repoUrl: "https://github.com/ollygarden/opentelemetry-agent-skills.git",
     skillName: "go",
+    registryKey: "go",
     originalPath: "skills/go",
     localDir: "ollygarden/opentelemetry-agent-skills/go"
 };
@@ -19,6 +20,21 @@ describe("generateRegistry", () => {
         expect(output).toContain("new URL(");
         expect(output).toContain("\"./ollygarden/opentelemetry-agent-skills/go/\"");
         expect(output).toContain("export const skills = createSkillsApi(registry)");
+    });
+
+    it("uses registry keys that can preserve wildcard-relative paths", () => {
+        const output = generateRegistry([
+            {
+                ...clonedSkill,
+                skillName: "go",
+                registryKey: "backend/go",
+                originalPath: "skills/backend/go",
+                localDir: "ollygarden/opentelemetry-agent-skills/skills/backend/go"
+            }
+        ]);
+
+        expect(output).toContain("\"backend/go\": {");
+        expect(output).toContain("originalPath: \"skills/backend/go\"");
     });
 
     it("rejects duplicate skill destinations", () => {

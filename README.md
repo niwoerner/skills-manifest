@@ -26,6 +26,8 @@ Create `skills-manifest.json`:
 }
 ```
 
+Wildcards are supported in `path`: `skills/*` loads valid skills directly under `skills/`, and `skills/*/**` loads valid skills recursively from `skills/` onward. Recursive wildcard registry keys preserve the path relative to the wildcard base, e.g. `skills/backend/go` becomes `.skill("backend/go")`.
+
 Run from your project root:
 
 ```sh

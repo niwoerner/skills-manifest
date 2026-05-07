@@ -8,6 +8,7 @@ export type ClonedSkill = {
     repoName: string;
     repoUrl: string;
     skillName: string;
+    registryKey: string;
     originalPath: string;
     localDir: string;
 };
@@ -62,7 +63,7 @@ export const registry = {
 `;
 
         for (const skill of repo.skills) {
-            out += `            ${JSON.stringify(skill.skillName)}: {
+            out += `            ${JSON.stringify(skill.registryKey)}: {
                 originalPath: ${JSON.stringify(skill.originalPath)},
 
                 localPath: new URL(
@@ -96,7 +97,7 @@ function groupByRepo(clonedSkills: readonly ClonedSkill[]) {
 
     for (const skill of clonedSkills) {
         const repoName = `${skill.owner}/${skill.repoName}`;
-        const skillKey = `${repoName}/${skill.skillName}`;
+        const skillKey = `${repoName}/${skill.registryKey}`;
 
         if (seenSkills.has(skillKey)) {
             throw new Error(`Duplicate skill destination in registry: ${skillKey}`);
