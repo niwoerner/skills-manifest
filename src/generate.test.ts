@@ -18,6 +18,7 @@ describe("generateRegistry", () => {
     it("generates repoUrl data and executable localPath URLs", () => {
         const output = generateRegistry([clonedSkill]);
 
+        expect(output).toContain("import { createSkillsApi } from \"@niwoerner/skills-manifest/api\"");
         expect(output).toContain("repoUrl: \"https://github.com/ollygarden/opentelemetry-agent-skills.git\"");
         expect(output).toContain("originalPath: \"skills/go\"");
         expect(output).toContain("new URL(");

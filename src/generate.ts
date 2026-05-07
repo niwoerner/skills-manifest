@@ -53,7 +53,7 @@ export async function writeRegistry(
 export function generateRegistry(clonedSkills: readonly ClonedSkill[]) {
     const repos = groupByRepo(clonedSkills);
 
-    let out = `import { createSkillsApi } from "skills-manifest/api";
+    let out = `import { createSkillsApi } from "@niwoerner/skills-manifest/api";
 
 export const registry = {
 `;
