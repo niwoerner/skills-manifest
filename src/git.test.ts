@@ -4,7 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { validateGeneratedSkills } from "./check.js";
 import { cloneAndOverwrite } from "./git.js";
+import { writeSkillsLock } from "./lock.js";
 import type { Skill } from "./manifest.js";
 
 const execFileAsync = promisify(execFile);
@@ -82,6 +84,28 @@ describe("cloneAndOverwrite", () => {
             "skills/frontend/js",
             "skills/go"
         ]);
+    });
+
+    it("validates generated skills as up to date", async () => {
+        const manifest = { skills: [skill("skills/*/**")] };
+        const clonedSkills = await cloneAndOverwrite(manifest);
+        await writeSkillsLock(clonedSkills);
+
+        await expect(validateGeneratedSkills(manifest)).resolves.toEqual([]);
+    });
+
+    it("warns when generated skills are out of date without failing validation", async () => {
+        const manifest = { skills: [skill("skills/*/**")] };
+        const clonedSkills = await cloneAndOverwrite(manifest);
+        await writeSkillsLock(clonedSkills);
+
+        await writeSkill(sourceRepo, "skills/rust", "rust");
+        await git(["add", "."], sourceRepo);
+        await git(["commit", "-m", "add rust skill"], sourceRepo);
+
+        const warnings = await validateGeneratedSkills(manifest);
+
+        expect(warnings.some((warning) => warning.includes("Added skill"))).toBe(true);
     });
 
     it("rejects duplicate registry keys across wildcard bases", async () => {

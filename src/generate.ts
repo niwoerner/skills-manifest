@@ -7,6 +7,9 @@ export type ClonedSkill = {
     owner: string;
     repoName: string;
     repoUrl: string;
+    ref: string;
+    resolvedCommit: string;
+    manifestPath: string;
     skillName: string;
     registryKey: string;
     originalPath: string;

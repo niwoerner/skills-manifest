@@ -28,11 +28,21 @@ Create `skills-manifest.json`:
 
 Wildcards are supported in `path`: `skills/*` loads valid skills directly under `skills/`, and `skills/*/**` loads valid skills recursively from `skills/` onward. Recursive wildcard registry keys preserve the path relative to the wildcard base, e.g. `skills/backend/go` becomes `.skill("backend/go")`.
 
-Run from your project root:
+Generate skills from your project root:
 
 ```sh
-npx skills-manifest
+npx skills-manifest generate
 ```
+
+`npx skills-manifest` is equivalent to `generate`. It writes `skills-manifests/registry.ts` and `skills-manifests/skills-lock.json`.
+
+For CI, validate generated skills without blocking on available updates:
+
+```sh
+npx skills-manifest validate
+```
+
+If remote skills changed, `validate` prints a warning and exits successfully. Run `generate` to refresh them.
 
 Use the generated registry:
 

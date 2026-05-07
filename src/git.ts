@@ -25,6 +25,32 @@ type ResolvedSkill = {
     installPath: string;
 };
 
+type FetchedSkillRepo = {
+    owner: string;
+    repoName: string;
+    resolvedCommit: string;
+    git: SimpleGit;
+    tempCloneDir: string;
+};
+
+/**
+ * Resolves manifest entries to concrete skills and commits without writing files.
+ * Used by validate and by generate's lock data.
+ */
+export async function resolveManifestSkills(skillManifest: SkillsManifest): Promise<ClonedSkill[]> {
+    const clonedSkills: ClonedSkill[] = [];
+
+    for (let index = 0; index < skillManifest.skills.length; index += MAX_CONCURRENT_CLONES) {
+        const batch = skillManifest.skills.slice(index, index + MAX_CONCURRENT_CLONES);
+        const resolvedBatch = await Promise.all(batch.map((skill) => resolveManifestSkill(skill)));
+        clonedSkills.push(...resolvedBatch.flat());
+    }
+
+    assertUniqueRegistryKeys(clonedSkills);
+
+    return clonedSkills;
+}
+
 /**
  * Clones all skills with bounded concurrency, then returns them only after every
  * clone succeeds so callers never generate a registry that points at missing installs.
@@ -43,6 +69,19 @@ export async function cloneAndOverwrite(skillManifest: SkillsManifest): Promise<
     return clonedSkills;
 }
 
+async function resolveManifestSkill(skill: Skill): Promise<ClonedSkill[]> {
+    return withFetchedSkillRepo(skill, async (fetchedRepo) => {
+        const selector = parseSkillPathSelector(skill.path);
+        const resolvedSkills = await resolveSkills(fetchedRepo.git, selector, skill);
+
+        return resolvedSkills.map((resolvedSkill) => toClonedSkill({
+            ...fetchedRepo,
+            skill,
+            resolvedSkill
+        }));
+    });
+}
+
 /**
  * Sparse-checks out one exact skill or one wildcard-selected set of skills into
  * a temp Git repo, validates each skill, then copies only the skill contents into
@@ -51,53 +90,36 @@ export async function cloneAndOverwrite(skillManifest: SkillsManifest): Promise<
 async function cloneAndOverwriteSkill(skill: Skill): Promise<ClonedSkill[]> {
     console.log(`Loading skill: ${skill.repoUrl}:${skill.path}`);
 
-    const { owner, repoName } = parseGitRepo(skill.repoUrl);
-    const selector = parseSkillPathSelector(skill.path);
-    const tempCloneDir = await mkdtemp(
-        path.join(os.tmpdir(), `skills-manifest-${owner}-${repoName}-`)
-    );
     const tempOutputDirs: string[] = [];
 
     try {
         try {
-            const git = simpleGit(tempCloneDir);
+            return await withFetchedSkillRepo(skill, async (fetchedRepo) => {
+                const selector = parseSkillPathSelector(skill.path);
+                const resolvedSkills = await resolveSkills(fetchedRepo.git, selector, skill);
 
-            await git.raw(["init"]);
-            await git.raw(["remote", "add", "origin", skill.repoUrl]);
-            await git.raw([
-                "fetch",
-                "--depth",
-                "1",
-                "--filter=blob:none",
-                "origin",
-                skill.ref
-            ]);
+                await fetchedRepo.git.raw(["sparse-checkout", "init", "--cone"]);
+                await fetchedRepo.git.raw([
+                    "sparse-checkout",
+                    "set",
+                    "--",
+                    ...resolvedSkills.map((resolvedSkill) => resolvedSkill.originalPath)
+                ]);
+                await fetchedRepo.git.raw(["checkout", "--detach", "FETCH_HEAD"]);
 
-            const resolvedSkills = await resolveSkills(git, selector, skill);
+                const clonedSkills: ClonedSkill[] = [];
+                for (const resolvedSkill of resolvedSkills) {
+                    const clonedSkill = await copyResolvedSkill({
+                        ...fetchedRepo,
+                        skill,
+                        resolvedSkill,
+                        tempOutputDirs
+                    });
+                    clonedSkills.push(clonedSkill);
+                }
 
-            await git.raw(["sparse-checkout", "init", "--cone"]);
-            await git.raw([
-                "sparse-checkout",
-                "set",
-                "--",
-                ...resolvedSkills.map((resolvedSkill) => resolvedSkill.originalPath)
-            ]);
-            await git.raw(["checkout", "--detach", "FETCH_HEAD"]);
-
-            const clonedSkills: ClonedSkill[] = [];
-            for (const resolvedSkill of resolvedSkills) {
-                const clonedSkill = await copyResolvedSkill({
-                    owner,
-                    repoName,
-                    skill,
-                    resolvedSkill,
-                    tempCloneDir,
-                    tempOutputDirs
-                });
-                clonedSkills.push(clonedSkill);
-            }
-
-            return clonedSkills;
+                return clonedSkills;
+            });
         } catch (error) {
             throw new Error(
                 `Failed to clone skill ${skill.repoUrl}:${skill.path}@${skill.ref}: ${formatError(error)}`,
@@ -105,8 +127,35 @@ async function cloneAndOverwriteSkill(skill: Skill): Promise<ClonedSkill[]> {
             );
         }
     } finally {
-        await rm(tempCloneDir, { recursive: true, force: true });
         await Promise.all(tempOutputDirs.map((tempOutputDir) => rm(tempOutputDir, { recursive: true, force: true })));
+    }
+}
+
+async function withFetchedSkillRepo<T>(skill: Skill, fn: (fetchedRepo: FetchedSkillRepo) => Promise<T>): Promise<T> {
+    const { owner, repoName } = parseGitRepo(skill.repoUrl);
+    const tempCloneDir = await mkdtemp(
+        path.join(os.tmpdir(), `skills-manifest-${owner}-${repoName}-`)
+    );
+
+    try {
+        const git = simpleGit(tempCloneDir);
+
+        await git.raw(["init"]);
+        await git.raw(["remote", "add", "origin", skill.repoUrl]);
+        await git.raw([
+            "fetch",
+            "--depth",
+            "1",
+            "--filter=blob:none",
+            "origin",
+            skill.ref
+        ]);
+
+        const resolvedCommit = (await git.raw(["rev-parse", "FETCH_HEAD"])).trim();
+
+        return await fn({ owner, repoName, resolvedCommit, git, tempCloneDir });
+    } finally {
+        await rm(tempCloneDir, { recursive: true, force: true });
     }
 }
 
@@ -116,6 +165,8 @@ async function resolveSkills(
     skill: Skill
 ): Promise<ResolvedSkill[]> {
     if (selector.kind === "exact") {
+        await validateSkillEntrypointInTree(git, selector.path, skill);
+
         const skillName = getSkillName(selector.path);
         return [
             {
@@ -133,6 +184,13 @@ async function resolveSkills(
     }
 
     return resolvedSkills;
+}
+
+async function validateSkillEntrypointInTree(git: SimpleGit, skillPath: string, skill: Skill) {
+    const files = await listTreeFiles(git, skillPath);
+    if (!files.includes(`${skillPath}/${SKILL_ENTRYPOINT}`)) {
+        throw new Error(`Skill is missing ${SKILL_ENTRYPOINT}: ${skill.repoUrl}:${skill.path}`);
+    }
 }
 
 async function discoverWildcardSkills(
@@ -179,12 +237,9 @@ function getSkillDirFromEntrypoint(filePath: string) {
     return filePath.slice(0, -suffix.length);
 }
 
-async function copyResolvedSkill(args: {
-    owner: string;
-    repoName: string;
+async function copyResolvedSkill(args: FetchedSkillRepo & {
     skill: Skill;
     resolvedSkill: ResolvedSkill;
-    tempCloneDir: string;
     tempOutputDirs: string[];
 }): Promise<ClonedSkill> {
     const { owner, repoName, skill, resolvedSkill, tempCloneDir, tempOutputDirs } = args;
@@ -207,10 +262,19 @@ async function copyResolvedSkill(args: {
     await rm(finalDir, { recursive: true, force: true });
     await rename(tempOutputDir, finalDir);
 
+    return toClonedSkill(args);
+}
+
+function toClonedSkill(args: FetchedSkillRepo & { skill: Skill; resolvedSkill: ResolvedSkill }): ClonedSkill {
+    const { owner, repoName, resolvedCommit, skill, resolvedSkill } = args;
+
     return {
         owner,
         repoName,
         repoUrl: skill.repoUrl,
+        ref: skill.ref,
+        resolvedCommit,
+        manifestPath: skill.path,
         skillName: resolvedSkill.skillName,
         registryKey: resolvedSkill.registryKey,
         originalPath: resolvedSkill.originalPath,
