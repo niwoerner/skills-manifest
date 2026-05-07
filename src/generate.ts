@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { REGISTRY_FILENAME, SKILLS_MANIFESTS_DIR } from "./index.js";
 
 export type ClonedSkill = {
     owner: string;
-    repo: string;
+    repoName: string;
     repoUrl: string;
     skillName: string;
     originalPath: string;
@@ -13,7 +14,7 @@ export type ClonedSkill = {
 
 type RegistryRepo = {
     name: string;
-    url: string;
+    repoUrl: string;
     skills: ClonedSkill[];
 };
 
@@ -23,11 +24,11 @@ type RegistryRepo = {
  */
 export async function writeRegistry(
     clonedSkills: readonly ClonedSkill[],
-    outputDir = path.join(process.cwd(), "skills-manifests")
+    outputDir = path.join(process.cwd(), SKILLS_MANIFESTS_DIR)
 ) {
     await mkdir(outputDir, { recursive: true });
 
-    const registryPath = path.join(outputDir, "registry.ts");
+    const registryPath = path.join(outputDir, REGISTRY_FILENAME);
     const tempRegistryPath = path.join(
         outputDir,
         `.registry.tmp-${process.pid}-${randomUUID()}.ts`
@@ -55,7 +56,7 @@ export const registry = {
 
     for (const repo of repos) {
         out += `    ${JSON.stringify(repo.name)}: {
-        repo: ${JSON.stringify(repo.url)},
+        repoUrl: ${JSON.stringify(repo.repoUrl)},
 
         skills: {
 `;
@@ -94,7 +95,7 @@ function groupByRepo(clonedSkills: readonly ClonedSkill[]) {
     const seenSkills = new Set<string>();
 
     for (const skill of clonedSkills) {
-        const repoName = `${skill.owner}/${skill.repo}`;
+        const repoName = `${skill.owner}/${skill.repoName}`;
         const skillKey = `${repoName}/${skill.skillName}`;
 
         if (seenSkills.has(skillKey)) {
@@ -106,7 +107,7 @@ function groupByRepo(clonedSkills: readonly ClonedSkill[]) {
         if (!repo) {
             repo = {
                 name: repoName,
-                url: skill.repoUrl,
+                repoUrl: skill.repoUrl,
                 skills: []
             };
             repos.set(repoName, repo);

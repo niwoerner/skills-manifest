@@ -4,7 +4,7 @@ export type SkillRegistryEntry = {
 };
 
 export type RepoRegistryEntry = {
-    repo: string;
+    repoUrl: string;
     skills: Record<string, SkillRegistryEntry>;
 };
 

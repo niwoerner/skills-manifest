@@ -1,12 +1,12 @@
 {
   "skills": [
     {
-      "repo": "https://github.com/ollygarden/opentelemetry-agent-skills.git",
+      "repoUrl": "https://github.com/ollygarden/opentelemetry-agent-skills.git",
       "path": "skills/general/declarative-config",
       "ref": "main"
     },
     {
-      "repo": "https://github.com/ollygarden/opentelemetry-agent-skills.git",
+      "repoUrl": "https://github.com/ollygarden/opentelemetry-agent-skills.git",
       "path": "skills/go",
       "ref": "main"
     }

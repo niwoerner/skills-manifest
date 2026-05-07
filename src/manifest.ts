@@ -6,14 +6,15 @@ import { readFile } from "node:fs/promises";
 // {
 //   "skills": [
 //     {
-//       "repo": "https://github.com/ollygarden/rose(.git)",
+//       "repoUrl": "https://github.com/ollygarden/rose(.git)",
+//       "path": "skills/go",
 //       "ref": "main" // branch, tag, or commit hash
 //     }
 //   ]
 // }
 
 export interface Skill {
-  repo: string;
+  repoUrl: string;
   path: string;
   ref: string;
 }
@@ -31,9 +32,9 @@ export const skillsManifestSchema: JSONSchemaType<SkillsManifest> = {
       minItems: 1,
       items: {
         type: "object",
-        required: ["repo", "path", "ref"],
+        required: ["repoUrl", "path", "ref"],
         properties: {
-          repo: { type: "string", minLength: 1 },
+          repoUrl: { type: "string", minLength: 1 },
           path: { type: "string", minLength: 1 },
           ref: { type: "string", minLength: 1 } //ToDo: we might wanna check based on ref type
         },

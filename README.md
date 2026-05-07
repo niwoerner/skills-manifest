@@ -18,7 +18,7 @@ Create `skills-manifest.json`:
 {
   "skills": [
     {
-      "repo": "https://github.com/ollygarden/opentelemetry-agent-skills.git",
+      "repoUrl": "https://github.com/ollygarden/opentelemetry-agent-skills.git",
       "path": "skills/go",
       "ref": "main"
     }

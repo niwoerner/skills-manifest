@@ -1,17 +1,17 @@
 {
   "skills": [
     {
-      "repo": "https://github.com/acme/skill-1.git",
+      "repoUrl": "https://github.com/acme/skill-1.git",
       "path": "skill-1",
       "ref": "main"
     },
     {
-      "repo": "https://github.com/acme/skill-2",
+      "repoUrl": "https://github.com/acme/skill-2",
       "path": "skill-2",
       "ref": "d76b075"
     },
     {
-      "repo": "https://github.com/acme/another-path/skill-3",
+      "repoUrl": "https://github.com/acme/skill-3",
       "path": "skill-3",
       "ref": "v1.0.0"
     }
