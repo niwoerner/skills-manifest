@@ -35,9 +35,7 @@ jobs:
         run: npm run test
 
       - name: Publish to npm
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance
 
       - name: Pack npm artifact
         run: npm pack
