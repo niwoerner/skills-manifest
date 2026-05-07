@@ -31,15 +31,15 @@ Wildcards are supported in `path`: `skills/*` loads valid skills directly under 
 Generate skills from your project root:
 
 ```sh
-npx skills-manifest generate
+npx skills-manifest generate [skills-manifest.json]
 ```
 
-`npx skills-manifest` is equivalent to `generate`. It writes `skills-manifests/registry.ts` and `skills-manifests/skills-lock.json`.
+The manifest path is optional and defaults to `./skills-manifest.json`. `npx skills-manifest` is equivalent to `generate`. It writes `skills-manifests/registry.ts` and `skills-manifests/skills-lock.json`.
 
 For CI, validate generated skills without blocking on available updates:
 
 ```sh
-npx skills-manifest validate
+npx skills-manifest validate [skills-manifest.json]
 ```
 
 If remote skills changed, `validate` prints a warning and exits successfully. Run `generate` to refresh them.

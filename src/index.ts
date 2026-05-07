@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { cloneAndOverwrite } from "./git.js";
@@ -23,7 +25,7 @@ export const MAX_CONCURRENT_CLONES = 5;
 
 async function main() {
     const command = process.argv[2] ?? "generate";
-    const skillsManifestPath = path.join(process.cwd(), "skills-manifest.json");
+    const skillsManifestPath = path.resolve(process.cwd(), process.argv[3] ?? "skills-manifest.json");
     const manifest = await loadSkillsManifest(skillsManifestPath);
 
     if (command === "generate") {
