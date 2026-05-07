@@ -4,6 +4,7 @@ import path from "node:path";
 import { REGISTRY_FILENAME, SKILLS_MANIFESTS_DIR } from "./index.js";
 
 export type ClonedSkill = {
+    id: string;
     owner: string;
     repoName: string;
     repoUrl: string;
@@ -11,8 +12,7 @@ export type ClonedSkill = {
     resolvedCommit: string;
     manifestPath: string;
     skillName: string;
-    registryKey: string;
-    originalPath: string;
+    upstreamPath: string;
     localDir: string;
 };
 
@@ -53,7 +53,9 @@ export async function writeRegistry(
 export function generateRegistry(clonedSkills: readonly ClonedSkill[]) {
     const repos = groupByRepo(clonedSkills);
 
-    let out = `import { createSkillsApi } from "@niwoerner/skills-manifest/api";
+    let out = `import { createSkillsRegistry, load as loadSkills } from "@niwoerner/skills-manifest/api";
+
+export const AGENT_SKILLS_DIR = "./.agents/skills";
 
 export const registry = {
 `;
@@ -66,8 +68,9 @@ export const registry = {
 `;
 
         for (const skill of repo.skills) {
-            out += `            ${JSON.stringify(skill.registryKey)}: {
-                originalPath: ${JSON.stringify(skill.originalPath)},
+            out += `            ${JSON.stringify(skill.id)}: {
+                id: ${JSON.stringify(skill.id)},
+                upstreamPath: ${JSON.stringify(skill.upstreamPath)},
 
                 localPath: new URL(
                     ${JSON.stringify(`./${skill.localDir}/`)},
@@ -84,7 +87,19 @@ export const registry = {
 
     out += `} as const;
 
-export const skills = createSkillsApi(registry);
+export const skills = createSkillsRegistry(registry);
+
+export function load(
+    skillOrSkills: Parameters<typeof loadSkills>[0],
+    targetPath?: Parameters<typeof loadSkills>[1]
+) {
+    if (targetPath === undefined) {
+        const skillsToLoad = Array.isArray(skillOrSkills) ? skillOrSkills : [skillOrSkills];
+        return loadSkills(skillsToLoad, AGENT_SKILLS_DIR);
+    }
+
+    return loadSkills(skillOrSkills, targetPath);
+}
 
 export type Registry = typeof registry;
 export type RepoName = keyof Registry;
@@ -100,7 +115,7 @@ function groupByRepo(clonedSkills: readonly ClonedSkill[]) {
 
     for (const skill of clonedSkills) {
         const repoName = `${skill.owner}/${skill.repoName}`;
-        const skillKey = `${repoName}/${skill.registryKey}`;
+        const skillKey = `${repoName}/${skill.id}`;
 
         if (seenSkills.has(skillKey)) {
             throw new Error(`Duplicate skill destination in registry: ${skillKey}`);

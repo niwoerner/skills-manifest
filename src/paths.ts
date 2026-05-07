@@ -73,14 +73,14 @@ export function getSkillName(skillPath: string) {
 }
 
 /** Builds the registry key for a discovered wildcard skill relative to the wildcard base. */
-export function getWildcardRegistryKey(basePath: string, skillPath: string) {
-    const registryKey = basePath === "" ? skillPath : path.posix.relative(basePath, skillPath);
+export function getWildcardSkillId(basePath: string, skillPath: string) {
+    const id = basePath === "" ? skillPath : path.posix.relative(basePath, skillPath);
 
-    if (registryKey === "" || registryKey === "." || registryKey.startsWith("../")) {
+    if (id === "" || id === "." || id.startsWith("../")) {
         throw new Error(`Discovered skill path is not under wildcard base: ${skillPath}`);
     }
 
-    return registryKey;
+    return id;
 }
 
 /** Builds the registry-relative local directory using POSIX separators. */

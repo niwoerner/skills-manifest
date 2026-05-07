@@ -2,7 +2,9 @@
 
 ## Description
 
-`skills-manifest` installs selected agent skills from Git repositories using a manifest file. It sparse-clones only the configured skill directories into `./skills-manifests` and generates a typed `registry.ts` for lookup/autocomplete.
+`skills-manifest` programtically installs selected agent skills from Git repositories using a manifest file. It sparse-clones only the configured skill directories into `./skills-manifests` and generates a typed `registry.ts` for lookup/autocomplete.
+
+**Note:** This project is experimental.
 
 ## Installation + usage
 
@@ -28,7 +30,7 @@ Create `skills-manifest.json`:
 }
 ```
 
-Wildcards are supported in `path`: `skills/*` loads valid skills directly under `skills/`, and `skills/*/**` loads valid skills recursively from `skills/` onward. Recursive wildcard registry keys preserve the path relative to the wildcard base, e.g. `skills/backend/go` becomes `.skill("backend/go")`.
+Wildcards are supported in `path`: `skills/*` loads valid skills directly under `skills/`, and `skills/*/**` loads valid skills recursively from `skills/` onward. Recursive wildcard skill ids preserve the path relative to the wildcard base, e.g. `skills/backend/go` becomes `.skill("backend/go")`.
 
 Generate skills from your project root:
 
@@ -57,6 +59,22 @@ const goSkill = skills
 
 console.log(goSkill.localPath);
 ```
+
+Load generated skills into the default agent skills directory (`./.agents/skills`):
+
+```ts
+import { load, skills } from "./skills-manifests/registry";
+
+await load(skills.repo("ollygarden/opentelemetry-agent-skills").skill("go"));
+```
+
+Or choose a custom target:
+
+```ts
+await load(goSkill, "./custom/skills/go");
+```
+
+Loading multiple skills copies them under the target by skill id, e.g. `./.agents/skills/go` and `./.agents/skills/backend/go`.
 
 ## Local development
 

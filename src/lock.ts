@@ -14,7 +14,7 @@ export function createSkillsLock(skills: readonly ClonedSkill[]): SkillsLock {
     return {
         version: 1,
         generatedAt: new Date().toISOString(),
-        skills: [...skills]
+        skills: skills.map(orderLockedSkill)
     };
 }
 
@@ -82,7 +82,10 @@ export async function loadSkillsLock(
         throw new Error(`Invalid ${lockPath}: expected skills-manifest lock file version 1`);
     }
 
-    return parsed;
+    return {
+        ...parsed,
+        skills: parsed.skills.map(normalizeLockedSkill)
+    };
 }
 
 function resolveSafeLocalDir(outputDir: string, localDir: string) {
@@ -92,6 +95,40 @@ function resolveSafeLocalDir(outputDir: string, localDir: string) {
     }
 
     return resolved;
+}
+
+function orderLockedSkill(skill: ClonedSkill): ClonedSkill {
+    return {
+        id: skill.id,
+        owner: skill.owner,
+        repoName: skill.repoName,
+        repoUrl: skill.repoUrl,
+        ref: skill.ref,
+        resolvedCommit: skill.resolvedCommit,
+        manifestPath: skill.manifestPath,
+        skillName: skill.skillName,
+        upstreamPath: skill.upstreamPath,
+        localDir: skill.localDir
+    };
+}
+
+function normalizeLockedSkill(skill: ClonedSkill | (Omit<ClonedSkill, "id" | "upstreamPath"> & { registryKey: string; originalPath: string; })) {
+    if ("id" in skill && "upstreamPath" in skill) {
+        return orderLockedSkill(skill);
+    }
+
+    return orderLockedSkill({
+        id: skill.registryKey,
+        owner: skill.owner,
+        repoName: skill.repoName,
+        repoUrl: skill.repoUrl,
+        ref: skill.ref,
+        resolvedCommit: skill.resolvedCommit,
+        manifestPath: skill.manifestPath,
+        skillName: skill.skillName,
+        upstreamPath: skill.originalPath,
+        localDir: skill.localDir
+    });
 }
 
 function isSkillsLock(value: unknown): value is SkillsLock {
@@ -116,8 +153,8 @@ function isLockedSkill(value: unknown): value is ClonedSkill {
         "resolvedCommit",
         "manifestPath",
         "skillName",
-        "registryKey",
-        "originalPath",
         "localDir"
-    ].every((key) => typeof skill[key] === "string");
+    ].every((key) => typeof skill[key] === "string") &&
+        ((typeof skill.id === "string" && typeof skill.upstreamPath === "string") ||
+            (typeof skill.registryKey === "string" && typeof skill.originalPath === "string"));
 }

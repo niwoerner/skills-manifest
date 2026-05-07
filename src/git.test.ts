@@ -42,8 +42,8 @@ describe("cloneAndOverwrite", () => {
             owner: "owner",
             repoName: "repo",
             skillName: "go",
-            registryKey: "go",
-            originalPath: "skills/go",
+            id: "go",
+            upstreamPath: "skills/go",
             localDir: "owner/repo/go"
         });
         await expect(readInstalledSkill("owner/repo/go/SKILL.md")).resolves.toContain("go");
@@ -54,7 +54,7 @@ describe("cloneAndOverwrite", () => {
             skills: [skill("skills/*")]
         });
 
-        expect(clonedSkills.map((clonedSkill) => clonedSkill.registryKey)).toEqual(["go"]);
+        expect(clonedSkills.map((clonedSkill) => clonedSkill.id)).toEqual(["go"]);
         expect(clonedSkills[0].localDir).toBe("owner/repo/skills/go");
         await expect(readInstalledSkill("owner/repo/skills/go/SKILL.md")).resolves.toContain("go");
     });
@@ -64,7 +64,7 @@ describe("cloneAndOverwrite", () => {
             skills: [skill("skills/*/**")]
         });
 
-        expect(clonedSkills.map((clonedSkill) => [clonedSkill.registryKey, clonedSkill.originalPath])).toEqual([
+        expect(clonedSkills.map((clonedSkill) => [clonedSkill.id, clonedSkill.upstreamPath])).toEqual([
             ["backend/go", "skills/backend/go"],
             ["frontend/js", "skills/frontend/js"],
             ["go", "skills/go"]
@@ -78,7 +78,7 @@ describe("cloneAndOverwrite", () => {
             skills: [skill("*/**")]
         });
 
-        expect(clonedSkills.map((clonedSkill) => clonedSkill.registryKey)).toEqual([
+        expect(clonedSkills.map((clonedSkill) => clonedSkill.id)).toEqual([
             "other/go",
             "skills/backend/go",
             "skills/frontend/js",
@@ -91,6 +91,8 @@ describe("cloneAndOverwrite", () => {
         const clonedSkills = await cloneAndOverwrite(manifest);
         await writeSkillsLock(clonedSkills);
 
+        const lock = JSON.parse(await readFile(path.join(projectDir, "skills-manifests", "skills-lock.json"), "utf8"));
+        expect(Object.keys(lock.skills[0]).slice(0, 3)).toEqual(["id", "owner", "repoName"]);
         await expect(validateGeneratedSkills(manifest)).resolves.toEqual([]);
     });
 

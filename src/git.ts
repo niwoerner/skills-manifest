@@ -11,7 +11,7 @@ import {
     getLocalSkillDir,
     getSkillName,
     getSourceSkillDir,
-    getWildcardRegistryKey,
+    getWildcardSkillId,
     parseSkillPathSelector,
     type SkillPathSelector
 } from "./paths.js";
@@ -19,9 +19,9 @@ import { parseGitRepo } from "./repo.js";
 import { validateSkillDirectory } from "./validate.js";
 
 type ResolvedSkill = {
-    originalPath: string;
+    upstreamPath: string;
     skillName: string;
-    registryKey: string;
+    id: string;
     installPath: string;
 };
 
@@ -103,7 +103,7 @@ async function cloneAndOverwriteSkill(skill: Skill): Promise<ClonedSkill[]> {
                     "sparse-checkout",
                     "set",
                     "--",
-                    ...resolvedSkills.map((resolvedSkill) => resolvedSkill.originalPath)
+                    ...resolvedSkills.map((resolvedSkill) => resolvedSkill.upstreamPath)
                 ]);
                 await fetchedRepo.git.raw(["checkout", "--detach", "FETCH_HEAD"]);
 
@@ -170,9 +170,9 @@ async function resolveSkills(
         const skillName = getSkillName(selector.path);
         return [
             {
-                originalPath: selector.path,
+                upstreamPath: selector.path,
                 skillName,
-                registryKey: skillName,
+                id: skillName,
                 installPath: skillName
             }
         ];
@@ -204,16 +204,16 @@ async function discoverWildcardSkills(
         const skillPath = getSkillDirFromEntrypoint(file);
         if (skillPath === undefined || skillPath === "") continue;
 
-        const registryKey = getWildcardRegistryKey(selector.basePath, skillPath);
-        if (!selector.recursive && registryKey.includes("/")) continue;
+        const id = getWildcardSkillId(selector.basePath, skillPath);
+        if (!selector.recursive && id.includes("/")) continue;
 
         skillPaths.add(skillPath);
     }
 
     return [...skillPaths].sort().map((skillPath) => ({
-        originalPath: skillPath,
+        upstreamPath: skillPath,
         skillName: getSkillName(skillPath),
-        registryKey: getWildcardRegistryKey(selector.basePath, skillPath),
+        id: getWildcardSkillId(selector.basePath, skillPath),
         installPath: skillPath
     }));
 }
@@ -253,8 +253,8 @@ async function copyResolvedSkill(args: FetchedSkillRepo & {
 
     await mkdir(finalParentDir, { recursive: true });
 
-    const sourceSkillDir = getSourceSkillDir(tempCloneDir, resolvedSkill.originalPath);
-    await validateSkillDirectory(sourceSkillDir, { ...skill, path: resolvedSkill.originalPath });
+    const sourceSkillDir = getSourceSkillDir(tempCloneDir, resolvedSkill.upstreamPath);
+    await validateSkillDirectory(sourceSkillDir, { ...skill, path: resolvedSkill.upstreamPath });
 
     await rm(tempOutputDir, { recursive: true, force: true });
     await cp(sourceSkillDir, tempOutputDir, { recursive: true, force: true });
@@ -269,6 +269,7 @@ function toClonedSkill(args: FetchedSkillRepo & { skill: Skill; resolvedSkill: R
     const { owner, repoName, resolvedCommit, skill, resolvedSkill } = args;
 
     return {
+        id: resolvedSkill.id,
         owner,
         repoName,
         repoUrl: skill.repoUrl,
@@ -276,8 +277,7 @@ function toClonedSkill(args: FetchedSkillRepo & { skill: Skill; resolvedSkill: R
         resolvedCommit,
         manifestPath: skill.path,
         skillName: resolvedSkill.skillName,
-        registryKey: resolvedSkill.registryKey,
-        originalPath: resolvedSkill.originalPath,
+        upstreamPath: resolvedSkill.upstreamPath,
         localDir: getLocalSkillDir(owner, repoName, resolvedSkill.installPath)
     };
 }
@@ -286,7 +286,7 @@ function assertUniqueRegistryKeys(clonedSkills: readonly ClonedSkill[]) {
     const seenSkills = new Set<string>();
 
     for (const skill of clonedSkills) {
-        const skillKey = `${skill.owner}/${skill.repoName}/${skill.registryKey}`;
+        const skillKey = `${skill.owner}/${skill.repoName}/${skill.id}`;
         if (seenSkills.has(skillKey)) {
             throw new Error(`Duplicate skill destination in registry: ${skillKey}`);
         }

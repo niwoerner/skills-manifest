@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
     getLocalSkillDir,
     getSkillName,
-    getWildcardRegistryKey,
+    getWildcardSkillId,
     normalizeRepoPath,
     parseSkillPathSelector
 } from "./paths.js";
@@ -19,9 +19,9 @@ describe("paths", () => {
         expect(() => normalizeRepoPath(".")).toThrow("Invalid skill path");
     });
 
-    it("derives skill names, registry keys, and local dirs", () => {
+    it("derives skill names, ids, and local dirs", () => {
         expect(getSkillName("skills/general/declarative-config")).toBe("declarative-config");
-        expect(getWildcardRegistryKey("skills", "skills/backend/go")).toBe("backend/go");
+        expect(getWildcardSkillId("skills", "skills/backend/go")).toBe("backend/go");
         expect(getLocalSkillDir("owner", "repo", "skills/backend/go")).toBe("owner/repo/skills/backend/go");
     });
 

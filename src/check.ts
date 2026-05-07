@@ -28,7 +28,7 @@ function compareSkills(lockedSkills: readonly ClonedSkill[], currentSkills: read
             );
         }
 
-        if (lockedSkill.originalPath !== currentSkill.originalPath || lockedSkill.localDir !== currentSkill.localDir) {
+        if (lockedSkill.upstreamPath !== currentSkill.upstreamPath || lockedSkill.localDir !== currentSkill.localDir) {
             warnings.push(`Changed skill: ${describeSkill(currentSkill)}`);
         }
     }
@@ -43,9 +43,9 @@ function compareSkills(lockedSkills: readonly ClonedSkill[], currentSkills: read
 }
 
 function getSkillKey(skill: ClonedSkill) {
-    return `${skill.repoUrl}\0${skill.ref}\0${skill.manifestPath}\0${skill.registryKey}`;
+    return `${skill.repoUrl}\0${skill.ref}\0${skill.manifestPath}\0${skill.id}`;
 }
 
 function describeSkill(skill: ClonedSkill) {
-    return `${skill.repoUrl}:${skill.manifestPath} -> ${skill.registryKey} (${skill.originalPath})`;
+    return `${skill.repoUrl}:${skill.manifestPath} -> ${skill.id} (${skill.upstreamPath})`;
 }
