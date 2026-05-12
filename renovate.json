@@ -4,6 +4,7 @@
   "timezone": "Europe/Berlin",
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
+  "minimumReleaseAge": "7 days",
   "packageRules": [
     {
       "description": "Automerge npm patch and minor updates after CI passes",
